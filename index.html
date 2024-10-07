@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Perpustakaan</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #feb6b6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+        }
+
+        h4 {
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            margin: 4px 0;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #333;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .book-list,
+        .catalog-list {
+            margin-top: 30px;
+        }
+
+        .book-list div,
+        .catalog-list div {
+            margin-bottom: 10px;
+        }
+
+        .book-item {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            background-color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Perpustakaan Cendikia</h1>
+
+    <div id="registration-section">
+        <h2>Daftar Sebagai Anggota Perpustakaan</h2>
+        <div class="form-group">
+            <label for="name">Nama Lengkap:</label>
+            <input type="text" id="name" placeholder="Masukkan nama lengkap Anda">
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="Masukkan email Anda">
+        </div>
+        <button onclick="register()">Daftar</button>
+    </div>
+
+    <div id="login-section" style="display:none;">
+        <h2>Selamat Datang di Perpustakaan Cendikia</h2>
+        <p id="welcome-msg"></p>
+
+        <h3>Katalog Buku</h3>
+        <div class="catalog-list" id="catalog-list"></div>
+
+        <h3>Pinjam Buku</h3>
+        <div class="form-group">
+            <label for="book-code">Kode Buku:</label>
+            <input type="text" id="book-code" placeholder="Masukkan kode buku yang ingin dipinjam">
+        </div>
+        <div class="form-group">
+            <label for="borrow-date">Tanggal Pinjam:</label>
+            <input type="date" id="borrow-date">
+        </div>
+        <div class="form-group">
+            <label for="return-date">Tanggal Pengembalian:</label>
+            <input type="date" id="return-date">
+        </div>
+        <button onclick="borrowBook()">Pinjam</button>
+
+        <div class="book-list" id="borrowed-books">
+            <h3>Buku yang Dipinjam</h3>
+            <div id="books-list"></div>
+        </div>
+        <h4>©desfa07/10/24</h4>
+    </div>
+
+
+    <script>
+        let members = JSON.parse(localStorage.getItem('members')) || [];
+        let catalogBooks = [
+            { code: 'B001', title: 'Laut Bercerita', author: 'Leila S. Chudori' },
+            { code: 'B002', title: 'Filosofi Teras', author: 'Henry Manampiring' },
+            { code: 'B003', title: 'Bumi Manusia', author: 'Pramoedya Ananta Toer' },
+            { code: 'B004', title: 'Hujan', author: 'Tere Liye' },
+            { code: 'B005', title: 'Harry Potter', author: 'J.K. Rowling' }
+        ];
+
+        // Fungsi untuk menampilkan katalog buku
+        function loadCatalog() {
+            let catalogList = document.getElementById('catalog-list');
+            catalogList.innerHTML = '';
+            catalogBooks.forEach(book => {
+                catalogList.innerHTML += `
+                    <div class="book-item">
+                        <strong>Kode:</strong> ${book.code}<br>
+                        <strong>Judul:</strong> ${book.title}<br>
+                        <strong>Penulis:</strong> ${book.author}<br>
+                    </div>
+                `;
+            });
+        }
+
+        function register() {
+            let name = document.getElementById('name').value;
+            let email = document.getElementById('email').value;
+            if (name && email) {
+                let newMember = { id: Date.now(), name: name, email: email, borrowedBooks: [] };
+                members.push(newMember);
+                localStorage.setItem('members', JSON.stringify(members));
+                login(newMember);
+            } else {
+                alert('Harap isi semua bidang.');
+            }
+        }
+
+        function login(member) {
+            document.getElementById('registration-section').style.display = 'none';
+            document.getElementById('login-section').style.display = 'block';
+            document.getElementById('welcome-msg').innerText = `Selamat datang, ${member.name}!`;
+            loadCatalog();
+            loadBorrowedBooks(member.id);
+        }
+
+        function borrowBook() {
+            let email = document.getElementById('email').value;
+            let member = members.find(m => m.email === email);
+            let bookCode = document.getElementById('book-code').value;
+            let borrowDate = new Date(document.getElementById('borrow-date').value);
+            let returnDate = new Date(document.getElementById('return-date').value);
+            let book = catalogBooks.find(b => b.code === bookCode);
+
+            if (book && borrowDate && returnDate) {
+                member.borrowedBooks.push({ bookName: book.title, borrowDate: borrowDate, returnDate: returnDate });
+                localStorage.setItem('members', JSON.stringify(members));
+                alert('Buku berhasil dipinjam!');
+                loadBorrowedBooks(member.id);
+            } else {
+                alert('Harap masukkan kode buku yang valid dan tanggal peminjaman serta pengembalian.');
+            }
+        }
+
+        function loadBorrowedBooks(memberId) {
+            let member = members.find(m => m.id === memberId);
+            let booksList = document.getElementById('books-list');
+            booksList.innerHTML = '';
+
+            // Only show the most recent borrowed book, if any
+            if (member.borrowedBooks.length > 0) {
+                let book = member.borrowedBooks[member.borrowedBooks.length - 1]; // Get the most recent book
+                let borrowDate = new Date(book.borrowDate);
+                let returnDate = new Date(book.returnDate);
+                let timeDiff = Math.abs(returnDate - borrowDate);
+                let totalDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)); // Menghitung total hari pinjam
+                let daysLate = totalDays > 3 ? totalDays - 3 : 0; // Menghitung hari terlambat
+                let fine = daysLate * 5000; // Denda Rp 5.000 per hari terlambat
+
+                booksList.innerHTML += `
+                    <div>
+                        <strong>Buku:</strong> ${book.bookName}<br>
+                        <strong>Tanggal Pinjam:</strong> ${borrowDate.toDateString()}<br>
+                        <strong>Tanggal Pengembalian:</strong> ${returnDate.toDateString()}<br>
+                        <strong>Jumlah Hari Terlambat:</strong> ${daysLate} hari<br>
+                        <strong>Denda:</strong> Rp ${fine}<br>
+                    </div>
+                    <hr>
+                `;
+            } else {
+                booksList.innerHTML = '<p>Tidak ada buku yang dipinjam.</p>';
+            }
+        }
+    </script>
+
+</body>
+
+</html>
